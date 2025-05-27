@@ -1,0 +1,50 @@
+#include <stdio.h>
+#include <math.h>
+
+// Function to calculate (base^exp) % mod using binary exponentiation
+unsigned long long mod_exp(unsigned long long base, unsigned long long exp, unsigned long long mod) {
+    unsigned long long result = 1;
+    base = base % mod;
+    while (exp > 0) {
+        if (exp % 2 == 1) {
+            result = (result * base) % mod;
+        }
+        exp = exp >> 1;
+        base = (base * base) % mod;
+    }
+    return result;
+}
+
+int main() {
+    unsigned long long q = 3599;  // A large prime number
+    unsigned long long a = 2;     // A public base
+
+    // Alice selects a secret number x
+    unsigned long long x = 123;  // Alice's secret number
+    unsigned long long A = mod_exp(a, x, q);  // Alice computes A = a^x mod q
+
+    // Bob selects a secret number y
+    unsigned long long y = 456;  // Bob's secret number
+    unsigned long long B = mod_exp(a, y, q);  // Bob computes B = a^y mod q
+
+    // Alice and Bob exchange A and B, then compute the shared key
+    unsigned long long alice_shared_key = mod_exp(B, x, q);  // Alice computes K = B^x mod q
+    unsigned long long bob_shared_key = mod_exp(A, y, q);    // Bob computes K = A^y mod q
+
+    printf("Public parameters: a = %llu, q = %llu\n", a, q);
+    printf("Alice's secret number (x): %llu\n", x);
+    printf("Bob's secret number (y): %llu\n", y);
+    printf("Alice computes A = a^x mod q: %llu\n", A);
+    printf("Bob computes B = a^y mod q: %llu\n", B);
+    printf("Alice's shared key: %llu\n", alice_shared_key);
+    printf("Bob's shared key: %llu\n", bob_shared_key);
+
+    // Verify if both keys match (this will confirm the correct exchange)
+    if (alice_shared_key == bob_shared_key) {
+        printf("Keys match! Shared secret key: %llu\n", alice_shared_key);
+    } else {
+        printf("Keys do not match!\n");
+    }
+
+    return 0;
+}
