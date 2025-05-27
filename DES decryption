@@ -1,0 +1,59 @@
+#include <stdio.h>
+#include <string.h>
+
+// XOR two binary strings
+void xor(char *a, char *b, char *result, int n) {
+    for (int i = 0; i < n; i++)
+        result[i] = (a[i] == b[i]) ? '0' : '1';
+    result[n] = '\0';
+}
+
+// Dummy key generation for simplicity
+void generate_keys(char keys[16][49], char *main_key) {
+    for (int i = 0; i < 16; i++) {
+        for (int j = 0; j < 48; j++)
+            keys[i][j] = main_key[(j + i) % 56];
+        keys[i][48] = '\0';
+    }
+}
+
+// Dummy Feistel function (just XOR for demo)
+void feistel(char *right, char *subkey, char *output) {
+    xor(right, subkey, output, 32); // Assume 32-bit right half
+}
+
+// Simple DES decryption simulation
+void des_decrypt(char *cipher, char keys[16][49], char *plaintext) {
+    char left[33], right[33], temp[33], f_out[33];
+
+    strncpy(left, cipher, 32); left[32] = '\0';
+    strncpy(right, cipher + 32, 32); right[32] = '\0';
+
+    for (int i = 15; i >= 0; i--) {
+        strcpy(temp, right);
+        feistel(right, keys[i], f_out);
+        xor(left, f_out, right, 32);
+        strcpy(left, temp);
+    }
+
+    strncpy(plaintext, right, 32);
+    strncpy(plaintext + 32, left, 32);
+    plaintext[64] = '\0';
+}
+
+int main() {
+    char main_key[57] = 
+        "00010011001101000101011101111001100110111011110011011111"; // 56-bit key
+
+    char cipher[65] = 
+        "0000000100100011010001010110011110001001101010111100110111101111"; // 64-bit cipher
+
+    char keys[16][49];
+    char decrypted[65];
+
+    generate_keys(keys, main_key);
+    des_decrypt(cipher, keys, decrypted);
+
+    printf("Decrypted Binary Text: %s\n", decrypted);
+    return 0;
+}
