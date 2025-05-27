@@ -1,0 +1,55 @@
+#include <stdio.h>
+#include <stdint.h>
+
+uint8_t xor(uint8_t a, uint8_t b) {
+    return a ^ b;
+}
+
+// Very simplified S-DES-like cipher (mock for demo)
+uint8_t sdes_encrypt(uint8_t plaintext, uint8_t key) {
+    return (plaintext ^ key); // XOR as mock encryption
+}
+
+uint8_t sdes_decrypt(uint8_t ciphertext, uint8_t key) {
+    return (ciphertext ^ key); // XOR is symmetric
+}
+
+// CBC Encryption
+void cbc_encrypt(uint8_t *pt, uint8_t *ct, int n, uint8_t key, uint8_t iv) {
+    uint8_t prev = iv;
+    for (int i = 0; i < n; i++) {
+        ct[i] = sdes_encrypt(xor(pt[i], prev), key);
+        prev = ct[i];
+    }
+}
+
+// CBC Decryption
+void cbc_decrypt(uint8_t *ct, uint8_t *pt, int n, uint8_t key, uint8_t iv) {
+    uint8_t prev = iv;
+    for (int i = 0; i < n; i++) {
+        pt[i] = xor(sdes_decrypt(ct[i], key), prev);
+        prev = ct[i];
+    }
+}
+
+void print_bin(uint8_t val) {
+    for (int i = 7; i >= 0; i--) printf("%d", (val >> i) & 1);
+}
+
+int main() {
+    uint8_t key = 0xFD;         // 0111111101 (10-bit mock -> 8-bit here)
+    uint8_t iv = 0xAA;          // 10101010
+    uint8_t pt[2] = {0x01, 0x23}; // 00000001 00100011
+    uint8_t ct[2], decrypted[2];
+
+    cbc_encrypt(pt, ct, 2, key, iv);
+    cbc_decrypt(ct, decrypted, 2, key, iv);
+
+    printf("Ciphertext:\n");
+    for (int i = 0; i < 2; i++) { print_bin(ct[i]); printf(" "); }
+    printf("\nDecrypted:\n");
+    for (int i = 0; i < 2; i++) { print_bin(decrypted[i]); printf(" "); }
+    printf("\n");
+
+    return 0;
+}
