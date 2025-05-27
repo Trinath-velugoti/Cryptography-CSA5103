@@ -1,0 +1,74 @@
+#include <stdio.h>
+#include <string.h>
+
+#define BLOCK_SIZE 8 // 8 bytes = 64 bits
+
+// Simple XOR cipher to simulate DES (not real DES!)
+void simple_des_encrypt(unsigned char *block, unsigned char *key, unsigned char *out) {
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        out[i] = block[i] ^ key[i];
+    }
+}
+
+// Triple DES (EDE: Encrypt-Decrypt-Encrypt)
+void triple_des_encrypt(unsigned char *block, unsigned char *key1, unsigned char *key2, unsigned char *key3, unsigned char *out) {
+    unsigned char temp1[BLOCK_SIZE], temp2[BLOCK_SIZE];
+
+    simple_des_encrypt(block, key1, temp1);          // 1st encryption
+    simple_des_encrypt(temp1, key2, temp2);          // 2nd decryption simulated as encryption (for simplicity)
+    simple_des_encrypt(temp2, key3, out);            // 3rd encryption
+}
+
+// CBC encryption
+void cbc_encrypt_3des(unsigned char *plaintext, int length, unsigned char *key1, unsigned char *key2, unsigned char *key3,
+                      unsigned char *iv, unsigned char *ciphertext) {
+    unsigned char prev_block[BLOCK_SIZE];
+    memcpy(prev_block, iv, BLOCK_SIZE);
+
+    for (int i = 0; i < length; i += BLOCK_SIZE) {
+        unsigned char block[BLOCK_SIZE];
+        unsigned char xor_block[BLOCK_SIZE];
+        unsigned char enc_block[BLOCK_SIZE];
+
+        // Get plaintext block
+        memcpy(block, &plaintext[i], BLOCK_SIZE);
+
+        // XOR with previous ciphertext (or IV for first block)
+        for (int j = 0; j < BLOCK_SIZE; j++) {
+            xor_block[j] = block[j] ^ prev_block[j];
+        }
+
+        // Encrypt with 3DES
+        triple_des_encrypt(xor_block, key1, key2, key3, enc_block);
+
+        // Save to output
+        memcpy(&ciphertext[i], enc_block, BLOCK_SIZE);
+        memcpy(prev_block, enc_block, BLOCK_SIZE); // Update for next round
+    }
+}
+
+int main() {
+    // 3 keys for 3DES (64-bit each = 8 bytes)
+    unsigned char key1[BLOCK_SIZE] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+    unsigned char key2[BLOCK_SIZE] = {0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10};
+    unsigned char key3[BLOCK_SIZE] = {0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa};
+
+    unsigned char iv[BLOCK_SIZE]   = {0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef};
+
+    unsigned char plaintext[BLOCK_SIZE * 2] = "OpenAI12345678"; // 16 bytes = 2 blocks
+    unsigned char ciphertext[BLOCK_SIZE * 2];
+
+    printf("Plaintext: %s\n", plaintext);
+
+    // Encrypt
+    cbc_encrypt_3des(plaintext, sizeof(plaintext), key1, key2, key3, iv, ciphertext);
+
+    // Print encrypted output
+    printf("Encrypted (hex): ");
+    for (int i = 0; i < sizeof(ciphertext); i++) {
+        printf("%02x ", ciphertext[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
