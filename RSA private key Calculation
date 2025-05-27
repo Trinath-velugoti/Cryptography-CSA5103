@@ -1,0 +1,57 @@
+#include <stdio.h>
+#include <stdio.h>
+
+// Extended Euclidean algorithm to find the multiplicative inverse of a mod b
+int extended_gcd(int a, int b, int *x, int *y) {
+    if (b == 0) {
+        *x = 1;
+        *y = 0;
+        return a;
+    }
+    int x1, y1;
+    int gcd = extended_gcd(b, a % b, &x1, &y1);
+    *x = y1;
+    *y = x1 - (a / b) * y1;
+    return gcd;
+}
+
+// Function to find the multiplicative inverse of e modulo f(n)
+int mod_inverse(int e, int fn) {
+    int x, y;
+    int g = extended_gcd(e, fn, &x, &y);
+    if (g != 1) {
+        return -1; // Inverse doesn't exist
+    }
+    return (x % fn + fn) % fn; // Ensure positive result
+}
+
+// Function to find p and q using trial and error (factorization of n)
+void find_p_q(int n, int *p, int *q) {
+    for (int i = 2; i <= n / 2; i++) {
+        if (n % i == 0) {
+            *p = i;
+            *q = n / i;
+            return;
+        }
+    }
+}
+
+int main() {
+    int e = 31;
+    int n = 3599;
+    int p, q;
+
+    // Find p and q
+    find_p_q(n, &p, &q);
+    
+    // Calculate φ(n) = (p - 1)(q - 1)
+    int fn = (p - 1) * (q - 1);
+    
+    // Calculate the private key d (mod inverse of e modulo φ(n))
+    int d = mod_inverse(e, fn);
+    
+    printf("p = %d, q = %d\n", p, q);
+    printf("Private key d = %d\n", d);
+    
+    return 0;
+}
