@@ -1,0 +1,90 @@
+#include <stdio.h>
+#include <string.h>
+
+#define BLOCK_SIZE 8
+
+// Padding with 1 followed by 0s
+int pad(unsigned char *input, int len) {
+    int pad_len = BLOCK_SIZE - (len % BLOCK_SIZE);
+    input[len] = 0x80;  // 1 bit followed by 0s (0x80 = 10000000)
+    for (int i = 1; i < pad_len; i++) {
+        input[len + i] = 0x00;
+    }
+    return len + pad_len;
+}
+
+// Simple XOR-based cipher (just for demo)
+void simple_encrypt_block(unsigned char *in, unsigned char *key, unsigned char *out) {
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        out[i] = in[i] ^ key[i];
+    }
+}
+
+// ECB Mode
+void encrypt_ecb(unsigned char *plaintext, int len, unsigned char *key, unsigned char *ciphertext) {
+    for (int i = 0; i < len; i += BLOCK_SIZE) {
+        simple_encrypt_block(&plaintext[i], key, &ciphertext[i]);
+    }
+}
+
+// CBC Mode
+void encrypt_cbc(unsigned char *plaintext, int len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext) {
+    unsigned char xor_block[BLOCK_SIZE];
+    memcpy(xor_block, iv, BLOCK_SIZE);
+
+    for (int i = 0; i < len; i += BLOCK_SIZE) {
+        for (int j = 0; j < BLOCK_SIZE; j++) {
+            xor_block[j] ^= plaintext[i + j];
+        }
+        simple_encrypt_block(xor_block, key, &ciphertext[i]);
+        memcpy(xor_block, &ciphertext[i], BLOCK_SIZE);
+    }
+}
+
+// CFB Mode (segment = block size)
+void encrypt_cfb(unsigned char *plaintext, int len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext) {
+    unsigned char feedback[BLOCK_SIZE];
+    memcpy(feedback, iv, BLOCK_SIZE);
+
+    for (int i = 0; i < len; i += BLOCK_SIZE) {
+        unsigned char cipher_out[BLOCK_SIZE];
+        simple_encrypt_block(feedback, key, cipher_out);
+
+        for (int j = 0; j < BLOCK_SIZE; j++) {
+            ciphertext[i + j] = cipher_out[j] ^ plaintext[i + j];
+            feedback[j] = ciphertext[i + j];
+        }
+    }
+}
+
+void print_hex(const char *label, unsigned char *data, int len) {
+    printf("%s: ", label);
+    for (int i = 0; i < len; i++) {
+        printf("%02x ", data[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    unsigned char key[BLOCK_SIZE] = {0x0f, 0x15, 0x71, 0xc9, 0x47, 0xd9, 0xe8, 0x59};
+    unsigned char iv[BLOCK_SIZE]  = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
+
+    unsigned char plaintext[64] = "HELLOCRYPTO";  // 11 bytes, needs padding
+    int len = strlen((char *)plaintext);
+
+    // Add padding
+    int padded_len = pad(plaintext, len);
+
+    unsigned char ecb_output[64], cbc_output[64], cfb_output[64];
+
+    encrypt_ecb(plaintext, padded_len, key, ecb_output);
+    encrypt_cbc(plaintext, padded_len, key, iv, cbc_output);
+    encrypt_cfb(plaintext, padded_len, key, iv, cfb_output);
+
+    printf("Plaintext (padded): %s\n", plaintext);
+    print_hex("ECB", ecb_output, padded_len);
+    print_hex("CBC", cbc_output, padded_len);
+    print_hex("CFB", cfb_output, padded_len);
+
+    return 0;
+}
