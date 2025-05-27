@@ -1,0 +1,67 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <time.h>
+
+#define MAX_LEN 1000
+
+// Encrypt a message with a one-time pad key
+void oneTimePadEncrypt(const char *plaintext, char *ciphertext, int *key) {
+    int i, j = 0;
+    for (i = 0; plaintext[i] != '\0'; ++i) {
+        char ch = plaintext[i];
+        if (isalpha(ch)) {
+            char base = isupper(ch) ? 'A' : 'a';
+            int shift = key[j];
+            ciphertext[i] = ((ch - base + shift) % 26) + base;
+            j++;
+        } else {
+            ciphertext[i] = ch; // Keep spaces or punctuation as-is
+        }
+    }
+    ciphertext[i] = '\0';
+}
+
+// Generate random key between 0 and 25
+void generateKey(int *key, int length) {
+    srand(time(NULL)); // Seed with current time
+    for (int i = 0; i < length; ++i) {
+        key[i] = rand() % 26; // 0–25
+    }
+}
+
+// Print key stream
+void printKeyStream(const int *key, int length) {
+    printf("Key stream: ");
+    for (int i = 0; i < length; ++i) {
+        printf("%d ", key[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    char plaintext[MAX_LEN], ciphertext[MAX_LEN];
+    int key[MAX_LEN];
+    int alpha_count = 0;
+
+    printf("Enter the plaintext: ");
+    fgets(plaintext, MAX_LEN, stdin);
+    plaintext[strcspn(plaintext, "\n")] = '\0'; // Remove newline
+
+    // Count only alphabetic characters for key length
+    for (int i = 0; plaintext[i] != '\0'; ++i) {
+        if (isalpha(plaintext[i])) {
+            alpha_count++;
+        }
+    }
+
+    generateKey(key, alpha_count);
+    oneTimePadEncrypt(plaintext, ciphertext, key);
+
+    printf("\nOriginal:   %s\n", plaintext);
+    printKeyStream(key, alpha_count);
+    printf("Encrypted:  %s\n", ciphertext);
+
+    return 0;
+}
