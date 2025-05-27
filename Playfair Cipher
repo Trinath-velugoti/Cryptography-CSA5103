@@ -1,0 +1,113 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+char matrix[5][5];
+
+// Remove duplicates from keyword and build the matrix
+void createMatrix(char key[]) {
+    int alpha[26] = {0}; // Track used characters
+    int i, j, k = 0;
+    char newKey[26] = {0};
+
+    // Convert to uppercase and remove duplicates
+    for (i = 0; key[i] != '\0'; i++) {
+        char ch = toupper(key[i]);
+        if (ch == 'J') ch = 'I'; // Replace J with I
+        if (isalpha(ch) && !alpha[ch - 'A']) {
+            newKey[k++] = ch;
+            alpha[ch - 'A'] = 1;
+        }
+    }
+
+    // Fill the rest of the alphabet
+    for (i = 0; i < 26; i++) {
+        if (i + 'A' == 'J') continue; // Skip J
+        if (!alpha[i]) {
+            newKey[k++] = i + 'A';
+        }
+    }
+
+    // Fill matrix
+    k = 0;
+    for (i = 0; i < 5; i++)
+        for (j = 0; j < 5; j++)
+            matrix[i][j] = newKey[k++];
+}
+
+// Find position of character in matrix
+void findPosition(char ch, int *row, int *col) {
+    if (ch == 'J') ch = 'I';
+    for (int i = 0; i < 5; i++)
+        for (int j = 0; j < 5; j++)
+            if (matrix[i][j] == ch) {
+                *row = i;
+                *col = j;
+                return;
+            }
+}
+
+// Encrypt digraph
+void encryptDigraph(char ch1, char ch2, char *res1, char *res2) {
+    int r1, c1, r2, c2;
+    findPosition(ch1, &r1, &c1);
+    findPosition(ch2, &r2, &c2);
+
+    if (r1 == r2) {
+        *res1 = matrix[r1][(c1 + 1) % 5];
+        *res2 = matrix[r2][(c2 + 1) % 5];
+    } else if (c1 == c2) {
+        *res1 = matrix[(r1 + 1) % 5][c1];
+        *res2 = matrix[(r2 + 1) % 5][c2];
+    } else {
+        *res1 = matrix[r1][c2];
+        *res2 = matrix[r2][c1];
+    }
+}
+
+// Prepare plaintext by forming digraphs
+void preprocessPlaintext(char *input, char *output) {
+    int i, j = 0;
+    for (i = 0; input[i] != '\0'; i++) {
+        if (!isalpha(input[i])) continue;
+
+        char ch = toupper(input[i]);
+        if (ch == 'J') ch = 'I';
+        output[j++] = ch;
+
+        // Handle repeating characters
+        if (j > 1 && output[j - 1] == output[j - 2]) {
+            output[j - 1] = 'X';
+            i--; // Recheck same char
+        }
+    }
+
+    if (j % 2 != 0) output[j++] = 'X'; // Padding
+    output[j] = '\0';
+}
+
+int main() {
+    char key[100], plaintext[100], prepared[200], encrypted[200];
+    int i, j = 0;
+
+    printf("Enter keyword: ");
+    fgets(key, sizeof(key), stdin);
+    key[strcspn(key, "\n")] = '\0'; // Remove newline
+
+    printf("Enter plaintext: ");
+    fgets(plaintext, sizeof(plaintext), stdin);
+    plaintext[strcspn(plaintext, "\n")] = '\0';
+
+    createMatrix(key);
+    preprocessPlaintext(plaintext, prepared);
+
+    for (i = 0; i < strlen(prepared); i += 2) {
+        encryptDigraph(prepared[i], prepared[i + 1], &encrypted[j], &encrypted[j + 1]);
+        j += 2;
+    }
+
+    encrypted[j] = '\0';
+
+    printf("Encrypted text: %s\n", encrypted);
+    return 0;
+}
