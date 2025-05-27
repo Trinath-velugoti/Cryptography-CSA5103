@@ -1,0 +1,63 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MOD 26
+
+// Key Matrix: [[9, 4], [5, 7]]
+int key[2][2] = {{9, 4}, {5, 7}};
+
+// Function to map char to number (A=0,...,Z=25)
+int charToInt(char c) {
+    return toupper(c) - 'A';
+}
+
+// Function to map number to char
+char intToChar(int n) {
+    return (n % MOD) + 'A';
+}
+
+// Encrypt using Hill Cipher 2x2
+void encryptHill(char *plaintext, char *ciphertext) {
+    int i, n = strlen(plaintext);
+    for (i = 0; i < n; i += 2) {
+        int a = charToInt(plaintext[i]);
+        int b = charToInt(plaintext[i + 1]);
+
+        int c1 = (key[0][0] * a + key[0][1] * b) % MOD;
+        int c2 = (key[1][0] * a + key[1][1] * b) % MOD;
+
+        ciphertext[i] = intToChar(c1);
+        ciphertext[i + 1] = intToChar(c2);
+    }
+    ciphertext[i] = '\0';
+}
+
+// Prepare message: remove spaces, convert to uppercase, pad with X
+void preparePlaintext(char *input, char *output) {
+    int j = 0;
+    for (int i = 0; input[i]; i++) {
+        if (isalpha(input[i])) {
+            output[j++] = toupper(input[i]);
+        }
+    }
+    if (j % 2 != 0) {
+        output[j++] = 'X'; // pad with X
+    }
+    output[j] = '\0';
+}
+
+int main() {
+    char input[] = "meet me at the usual place at ten rather than eight oclock";
+    char plaintext[200], ciphertext[200];
+
+    preparePlaintext(input, plaintext);
+
+    printf("Prepared plaintext: %s\n", plaintext);
+
+    encryptHill(plaintext, ciphertext);
+
+    printf("Encrypted ciphertext: %s\n", ciphertext);
+
+    return 0;
+}
